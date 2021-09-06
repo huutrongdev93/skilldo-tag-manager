@@ -16,7 +16,7 @@ function tags_database_table_create() {
     $model->query("CREATE TABLE `".CLE_PREFIX."tags_relationships` ( 
         `id` INT NOT NULL AUTO_INCREMENT , 
         `object_id` INT NOT NULL DEFAULT '0' , 
-        `object_type` INT NOT NULL DEFAULT '0' , 
+        `object_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'product' , 
         `tag_id` INT NOT NULL DEFAULT '0' , 
         `created` DATETIME NOT NULL , 
         `updated` DATETIME NOT NULL , 

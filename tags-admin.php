@@ -6,21 +6,17 @@ function admin_ajax_tag_search( $ci, $modal ) {
 
     $result['results'] = [];
 
-    $query = InputBuilder::Get('q');
+    $query = Request::Get('q');
 
-    $args = ['limit' => 50, 'select' => 'id, name, name_format'];
+    $args = Qr::set()->select('id', 'name', 'name_format')->limit(50);
 
     if(have_posts($query)) {
 
         $keyword = Arr::get($query, 'term');
 
         if(!empty($keyword)) {
-
             $keyword = trim(Str::lower($keyword));
-
-            $args['where_like'] = [
-                'name_format' 	=> [$keyword],
-            ];
+            $args->where('name_format', 'like', '%'.$keyword.'%');
         }
 
         $tags = tag::gets($args);

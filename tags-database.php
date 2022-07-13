@@ -1,31 +1,32 @@
 <?php
 function tags_database_table_create() {
-
-	$model = get_model('plugins', 'backend');
-
-	$model->query("CREATE TABLE IF NOT EXISTS `".CLE_PREFIX."tags` (
-		`id` INT NOT NULL AUTO_INCREMENT , 
-        `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-        `name_format` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-        `slug` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-        `created` datetime NOT NULL,
-        `updated` datetime NOT NULL,
-        `order` int(11) NOT NULL DEFAULT '0',
-	    PRIMARY KEY (`id`)) ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;");
-
-    $model->query("CREATE TABLE `".CLE_PREFIX."tags_relationships` ( 
-        `id` INT NOT NULL AUTO_INCREMENT , 
-        `object_id` INT NOT NULL DEFAULT '0' , 
-        `object_type` INT NOT NULL DEFAULT '0' , 
-        `tag_id` INT NOT NULL DEFAULT '0' , 
-        `created` DATETIME NOT NULL , 
-        `updated` DATETIME NOT NULL , 
-        `order` INT NOT NULL DEFAULT '0' , 
-        PRIMARY KEY (`id`)) ENGINE = InnoDB CHARSET=utf8mb4 COLLATE utf8mb4_unicode_ci;");
+    $model = model();
+    if(!$model::schema()->hasTable('tags')) {
+        $model::schema()->create('tags', function ($table) {
+            $table->increments('id');
+            $table->string('name', 255)->collate('utf8mb4_unicode_ci')->nullable();
+            $table->string('name_format', 200)->collate('utf8mb4_unicode_ci')->nullable();
+            $table->string('slug', 255)->collate('utf8mb4_unicode_ci')->nullable();
+            $table->integer('order')->default(0);
+            $table->dateTime('created');
+            $table->dateTime('updated')->nullable();
+        });
+    }
+    if(!$model::schema()->hasTable('tags_relationships')) {
+        $model::schema()->create('tags_relationships', function ($table) {
+            $table->increments('id');
+            $table->integer('object_id')->default(0);
+            $table->string('object_type', 200)->collate('utf8mb4_unicode_ci')->default('product');
+            $table->integer('tag_id')->default(0);
+            $table->integer('order')->default(0);
+            $table->dateTime('created');
+            $table->dateTime('updated')->nullable();
+        });
+    }
 }
 
 function tags_database_table_drop() {
-	$model = get_model('plugins', 'backend');
-	$model->query("DROP TABLE IF EXISTS `".CLE_PREFIX."tags`");
-	$model->query("DROP TABLE IF EXISTS `".CLE_PREFIX."tags_relationships`");
+    $model = model();
+    $model::schema()->drop('tags');
+    $model::schema()->drop('tags_relationships');
 }

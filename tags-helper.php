@@ -1,55 +1,8 @@
 <?php
-Class Tag {
-    static public function get($args = []) {
-
-        if(is_numeric($args)) {
-            $cache_id = 'tags_'.md5($args);
-            if(Language::default() != Language::current()) {
-                $cache_id .= '_'.Language::current();
-            }
-            if(CacheHandler::has($cache_id) !== false) return apply_filters('get_tags', CacheHandler::get($cache_id));
-            $args = ['where' => array('id' => (int)$args)];
-        }
-
-        if(!empty($args['where']['slug']) && count($args['where']) == 1 && count($args) <= 2) {
-            $cache_slug     = 'tags_'.md5($args['where']['slug']);
-            $params_temp    = [];
-            if(!empty($args['params'])) $params_temp = $args['params'];
-            $cache_slug .= '_'.md5(serialize($params_temp));
-            if(Language::default() != Language::current()) {
-                $cache_slug .= '_'.Language::current();
-            }
-            if(CacheHandler::has($cache_slug) !== false) return apply_filters('get_tags', CacheHandler::get($cache_slug));
-        }
-
-        $args = array_merge(['where' => [], 'params' => []], (is_array($args)) ? $args : [] );
-
-        $model 	= get_model()->settable('tags')->settable_metabox('metabox');
-
-        $tags = $model->get_data($args);
-
-        if(have_posts($tags)) {
-            $cache_id = 'tags_'.md5($tags->id);
-            if(Language::default() != Language::current()) {
-                $cache_id .= '_'.Language::current();
-            }
-            CacheHandler::save($cache_id, $tags);
-            if(!empty($cache_slug)) CacheHandler::save($cache_slug, $tags);
-        }
-
-        return apply_filters('get_tags', $tags);
-    }
-    static public function gets($args = []) {
-        if(!have_posts($args)) $args = [];
-        if(is_numeric($args))  $args = ['where' => ['id' => (int)$args]];
-        $args = array_merge(['where' => [], 'params' => []], $args );
-        $model = get_model()->settable('tags')->settable_metabox('metabox');
-        $tags = $model->gets_data($args);
-        return apply_filters( 'gets_tags', $tags, $args );
-    }
+Class Tag extends Model {
+    static string $table = 'tags';
     static public function getsByObjectID($id, $type = 'product') {
-        $model = get_model()->settable('tags_relationships');
-        $temp  = $model->gets_where(['object_id' => $id, 'object_type' => $type], ['select' => 'object_id, tag_id']);
+        $temp   = model('tags_relationships')->gets(Qr::set('object_id', $id)->where('object_type', $type)->select('object_id', 'tag_id'));
         $listID = [];
         foreach ($temp as $item) {
             $listID[] = $item->tag_id;
@@ -57,26 +10,14 @@ Class Tag {
         return $listID;
     }
     static public function getsObject($id, $type = 'product') {
-        $model = get_model()->settable('tags_relationships');
-        $temp  = $model->gets_where(['object_type' => $type, 'tag_id' => $id], ['select' => 'object_id']);
+        $temp  = model('tags_relationships')->gets(Qr::set('object_type', $type)->where('tag_id', $id)->select('object_id'));
         $listID = [];
         foreach ($temp as $item) {
             $listID[] = $item->object_id;
         }
         return $listID;
     }
-    static public function count($args = []) {
-        if(is_numeric($args))  $args = ['where' => ['id' => (int)$args]];
-        if(!have_posts($args)) $args = array();
-        $args = array_merge( array('where' => array(), 'params' => array() ), $args );
-        $model 	= get_model()->settable('tags')->settable_metabox('metabox');
-        $tags = $model->count_data($args);
-        $model->settable('tags');
-        return apply_filters( 'count_tags', $tags, $args );
-    }
     static public function insert($tags = []) {
-
-        $model = get_model()->settable('tags');
 
         if(!empty($tags['id'])) {
 
@@ -104,18 +45,28 @@ Class Tag {
         $slug            =  Str::slug($name);
 
         if ($update) {
-            $args_count = ['where' => ['slug' => $slug, 'id <>' => $id]];
+            $argsCount = Qr::set('slug', $slug)->where('id', '<>', $id);
         }
         else {
-            $args_count = ['where' => ['slug' => $slug]];
+            $argsCount = Qr::set('slug', $slug);
         }
 
-        $count = static::count($args_count);
+        $count = static::count($argsCount);
+
         $i = 1;
+
         while ($count > 0) {
+
             $slug = $slug.'-'.$i;
-            $args_count['where']['slug'] = $slug;
-            $count = static::count($args_count);
+
+            if($argsCount->isWhere('slug')) {
+                $argsCount->removeWhere('slug');
+            }
+
+            $argsCount->where('slug', $slug);
+
+            $count = static::count($argsCount);
+
             $i++;
         }
 
@@ -123,15 +74,15 @@ Class Tag {
 
         $data = apply_filters( 'pre_insert_tags_data', $data, $tags, $update ? $old_tags : null);
 
+        $model = model(static::$table);
+
         if ($update) {
 
-            $model->settable('tags')->update_where( $data, compact( 'id' ) );
+            $model->update( $data, Qr::set($id));
 
             $tags_id = (int) $id;
         }
         else {
-
-            $model->settable('tags');
 
             $tags_id = $model->add( $data );
         }
@@ -148,7 +99,7 @@ Class Tag {
 
         if($id == 0) return false;
 
-        $model = get_model()->settable('tags');
+        $model = model(static::$table);
 
         $tag   = static::get($id);
 
@@ -156,14 +107,14 @@ Class Tag {
 
             do_action('delete_tags', $tag );
 
-            if($model->delete_where(['id'=> $tag])) {
+            if($model->delete(Qr::set($tag))) {
 
                 do_action('delete_tags_success', $id );
 
                 Metadata::deleteByMid('tags', $id);
 
                 //delete menu
-                $model->settable('tags_relationships')->delete_where(['tag_id'=> $id]);
+                $model->settable('tags_relationships')->delete(Qr::set('tag_id', $id));
 
                 CacheHandler::delete( 'tags_'.md5($tag->id), true );
 
@@ -179,17 +130,17 @@ Class Tag {
 
         if(have_posts($listID)) {
 
-            $model  = get_model()->settable('tags');
+            $model  = model(static::$table);
 
-            if($model->delete_where_in(['field' => 'id', 'data' => $listID])) {
+            if($model->delete(Qr::set()->whereIn('id', $listID))) {
 
                 do_action('delete_tags_list_trash_success', $listID );
 
-                foreach ($listID as $key => $id) {
+                foreach ($listID as $id) {
                     Metadata::deleteByMid('tags', $id);
                 }
 
-                $model->settable('tags_relationships')->delete_where_in(['field' => 'tag_id', 'data' => $listID]);
+                $model->settable('tags_relationships')->delete(Qr::set()->whereIn('tag_id', $listID));
 
                 CacheHandler::delete( 'tags_', true );
 
@@ -199,17 +150,8 @@ Class Tag {
 
         return false;
     }
-    static public function getMeta($tags_id, $key, $single) {
-        return Metadata::get('tags', $tags_id, $key, $single);
-    }
-    static public function updateMeta($tags_id, $meta_key, $meta_value) {
-        return Metadata::update('tags', $tags_id, $meta_key, $meta_value);
-    }
-    static public function deleteMeta($tags_id, $meta_key, $meta_value) {
-        return Metadata::delete('tags', $tags_id, $meta_key, $meta_value);
-    }
     static public function empty($id, $type = 'product') {
-        return get_model()->settable('tags_relationships')->delete_where(['object_id' => $id, 'object_type' => $type]);
+        return model('tags_relationships')->delete(Qr::set('object_id', $id)->where('object_type', $type));
     }
     static public function insertRelationship($id, $listID, $type = 'product') {
 
@@ -219,7 +161,7 @@ Class Tag {
 
             $model->settable('tags_relationships');
 
-            $temp = $model->gets_where(['object_id' => $id, 'object_type' => $type], ['select' => 'tag_id']);
+            $temp = $model->gets(Qr::set('object_id', $id)->where('object_type', $type)->select('tag_id'));
 
             $relationships = [];
 
@@ -236,13 +178,13 @@ Class Tag {
                     unset($relationships[$tagID]);
                     continue;
                 }
-                $re['tag_id'] 		= $tagID;
+                $re['tag_id'] = $tagID;
                 $model->add($re);
             }
 
             if( have_posts($relationships) ) {
                 foreach ($relationships as $tag_id) {
-                    $model->delete_where(array('object_id' => $id, 'object_type' => $type, 'tag_id' => $tag_id ));
+                    $model->delete(Qr::set('object_id', $id)->where('object_type', $type)->where('tag_id', $tag_id));
                 }
             }
         }

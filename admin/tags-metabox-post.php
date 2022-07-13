@@ -10,7 +10,7 @@ function admin_metabox_post_tag( $object ) {
     $tags = [];
     if(have_posts($object)) {
         $tagsID = Tag::getsByObjectID($object->id, 'post');
-        $tags   = Tag::gets(['where_in' =>['field' => 'id', 'data' => $tagsID]]);
+        $tags   = Tag::gets(Qr::set()->whereIn('id', $tagsID));
     }
     ?>
     <div class="col-md-12" id="box_tags">
@@ -64,7 +64,7 @@ function admin_post_tag_save($id, $module) {
 
     if($module == 'post' && Admin::getPostType() == 'post') {
 
-        $tags = InputBuilder::Post('tags');
+        $tags = Request::Post('tags');
 
         if(have_posts($tags)) {
 
@@ -78,7 +78,7 @@ function admin_post_tag_save($id, $module) {
                     'name_formats' => trim(Str::lower($name))
                 ];
 
-                $tag = tag::get(['where' => 'name_format = CONVERT(\''.trim(Str::lower($name)).'\', BINARY)', 'select' => 'id, name']);
+                $tag = tag::get(Qr::set('name_format', 'CONVERT(\''.trim(Str::lower($name)).'\', BINARY)')->select('id', 'name'));
 
                 if(have_posts($tag)) {
 

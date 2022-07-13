@@ -10,10 +10,10 @@ function admin_metabox_product_tag( $object ) {
     $tags = [];
     if(have_posts($object)) {
         $tagsID = Tag::getsByObjectID($object->id, 'product');
-        $tags   = Tag::gets(['where_in' =>['field' => 'id', 'data' => $tagsID]]);
+        $tags   = Tag::gets(Qr::set()->whereIn('id', $tagsID));
     }
     ?>
-    <div class="col-md-12" id="box_tags">
+    <div class="col-md-12 row m-1" id="box_tags">
         <div class="form-group group">
             <select name="tags[]" class="form-control select2" multiple="multiple">
                 <?php
@@ -64,7 +64,7 @@ function admin_product_tag_save($id, $module) {
 
     if($module == 'products') {
 
-        $tags = InputBuilder::Post('tags');
+        $tags = Request::Post('tags');
 
         $listID = [];
 
@@ -78,7 +78,7 @@ function admin_product_tag_save($id, $module) {
                     'name_format' => trim(Str::lower($name))
                 ];
 
-                $tag = tag::get(['where' => $tag_insert, 'select' => 'id, name']);
+                $tag = tag::get(Qr::set('name_format', 'CONVERT(\''.trim(Str::lower($name)).'\', BINARY)')->select('id', 'name'));
 
                 if(have_posts($tag)) {
 

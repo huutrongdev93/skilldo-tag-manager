@@ -3,18 +3,13 @@ $tag = Url::segment(2);
 
 if($tag == 'tag') { $tag = Url::segment(3); }
 
-$tag = Tag::get(['where' => ['slug' => $tag]]);
+$tag = Tag::get(Qr::set('slug', $tag));
 
 $objects = [];
 
 if(have_posts($tag)) {
     $listID = Tag::getsObject($tag->id, 'post');
-    $objects = Posts::gets(array(
-        'where_in' => array(
-            'field' => 'id',
-            'data'  => $listID
-        )
-    ));
+    $objects = Posts::gets(Qr::set()->whereIn('id', $listID));
 }
 
 if(have_posts($objects)) {
@@ -44,10 +39,10 @@ if(have_posts($objects)) {
         <?php echo '<div class="row">';
         foreach ($objects as $key => $val):
             if($layout_setting['style'] == 'vertical')
-                $this->template->render_include('loop/item_post',array('val' => $val));
+                Template::partial('include/loop/item_post',array('val' => $val));
             else {
                 echo '<div class="col-md-'.$col.'">';
-                $this->template->render_include('loop/item_post_horizontal',array('val' => $val));
+                Template::partial('include/loop/item_post_horizontal',array('val' => $val));
                 echo '</div>';
             }
         endforeach; echo '</div>' ?>

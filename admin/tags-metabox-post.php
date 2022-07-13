@@ -14,7 +14,7 @@ function admin_metabox_post_tag( $object ) {
     }
     ?>
     <div class="col-md-12" id="box_tags">
-        <div class="form-group group">
+        <div class="form-group group m-2">
             <select name="tags[]" class="form-control select2" multiple="multiple">
                 <?php
                 if(have_posts($tags)) {
@@ -65,6 +65,8 @@ function admin_post_tag_save($id, $module) {
     if($module == 'post' && Admin::getPostType() == 'post') {
 
         $tags = Request::Post('tags');
+
+        $listID = [];
 
         if(have_posts($tags)) {
 

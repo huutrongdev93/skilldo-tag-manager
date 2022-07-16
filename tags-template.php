@@ -1,19 +1,19 @@
 <?php
 function product_detail_tag( $object ) {
     $tagsID = Tag::getsByObjectID($object->id, 'product');
-    $tags   = Tag::gets(['where_in' =>['field' => 'id', 'data' => $tagsID]]);
-	$str = '';
+    $tags   = (have_posts($tagsID)) ? Tag::gets(Qr::set()->whereIn('id', $tagsID)) : [];
 	if( have_posts($tags) ) {
+        $str = '';
 		?>
 		<div class="tags">
-			<p>Tags:
+			<div class="d-flex gap-1 flex-wrap">Tags:
 				<?php
 					foreach ($tags as $tag):
 						$str .= '<a href="'.Url::permalink('san-pham?tag='.$tag->slug).'">'.$tag->name.'</a>';
 					endforeach;
 					echo $str;
 				?>
-			</p>
+			</div>
 		</div>
 		<style type="text/css">
 			.tags { margin: 20px 0 0 0; }
@@ -37,7 +37,7 @@ function post_detail_tag($content) {
 
             $tagsID = Tag::getsByObjectID($object->id, 'post');
 
-            $tags   = Tag::gets(['where_in' =>['field' => 'id', 'data' => $tagsID]]);
+            $tags   = Tag::gets(Qr::set()->whereIn('id', $tagsID));
 
 			$str = '';
 

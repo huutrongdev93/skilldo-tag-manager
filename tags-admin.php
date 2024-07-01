@@ -2,32 +2,35 @@
 include_once 'admin/tags-metabox-product.php';
 include_once 'admin/tags-metabox-post.php';
 
-function admin_ajax_tag_search( $ci, $modal ) {
+class AdminTagAjax {
 
-    $result['results'] = [];
+    static function search(\SkillDo\Http\Request $request): void
+    {
 
-    $query = Request::Get('q');
+        $result['results'] = [];
 
-    $args = Qr::set()->select('id', 'name', 'name_format')->limit(50);
+        $query = $request->input('q');
 
-    if(have_posts($query)) {
+        $args = Qr::set()->select('id', 'name', 'name_format')->limit(50);
 
-        $keyword = Arr::get($query, 'term');
+        if(have_posts($query)) {
 
-        if(!empty($keyword)) {
-            $keyword = trim(Str::lower($keyword));
-            $args->where('name_format', 'like', '%'.$keyword.'%');
+            $keyword = Arr::get($query, 'term');
+
+            if(!empty($keyword)) {
+                $keyword = trim(Str::lower($keyword));
+                $args->where('name_format', 'like', '%'.$keyword.'%');
+            }
+
+            $tags = Tag::gets($args);
+
+            foreach ($tags as $tag) {
+                $result['results'][] = $tag;
+            }
         }
 
-        $tags = tag::gets($args);
-
-        foreach ($tags as $tag) {
-            $result['results'][] = $tag;
-        }
+        echo json_encode($result);
     }
-
-    echo json_encode($result);
-
-    return true;
 }
-Ajax::admin('admin_ajax_tag_search');
+
+Ajax::admin('AdminTagAjax::search');

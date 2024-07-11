@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Capsule\Manager as DB;
 
 return new class () extends Migration {
 
@@ -13,7 +14,7 @@ return new class () extends Migration {
                 $table->string('name_format', 200)->collate('utf8mb4_unicode_ci')->nullable();
                 $table->string('slug', 255)->collate('utf8mb4_unicode_ci')->nullable();
                 $table->integer('order')->default(0);
-                $table->dateTime('created')->default('CURRENT_TIMESTAMP');
+                $table->dateTime('created')->default(DB::raw('CURRENT_TIMESTAMP'));
                 $table->dateTime('updated')->nullable();
             });
         }

@@ -1,12 +1,4 @@
 <?php
-/**
-Plugin name     : Tags Manager
-Plugin class    : tags_manager
-Plugin uri      : http://sikido.vn
-Description     : Ứng dụng quản lý tag, bạn có thể thêm xóa một hoặc nhiều tag cho sản phẩm và bài viết của bạn dễ dàng và thuận tiện nhất.
-Author          : Nguyễn Hữu Trọng
-Version         : 2.2.0
-*/
 const TAG_NAME = 'tags-manager';
 
 define('TAG_PATH', Path::plugin(TAG_NAME));

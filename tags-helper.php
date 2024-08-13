@@ -69,9 +69,9 @@ Class Tag extends \SkillDo\Model\Model {
                 //delete menu
                 $model->table('tags_relationships')::delete(Qr::set('tag_id', $id));
 
-                CacheHandler::delete( 'tags_'.md5($tag->id), true );
+                \SkillDo\Cache::delete( 'tags_'.md5($tag->id), true );
 
-                CacheHandler::delete( 'tags_'.md5($tag->slug), true );
+                \SkillDo\Cache::delete( 'tags_'.md5($tag->slug), true );
 
                 return [$id];
             }
@@ -92,7 +92,7 @@ Class Tag extends \SkillDo\Model\Model {
 
                 $model->table('tags_relationships')::delete(Qr::set()->whereIn('tag_id', $listID));
 
-                CacheHandler::delete( 'tags_', true );
+                \SkillDo\Cache::delete( 'tags_', true );
 
                 return $listID;
             }

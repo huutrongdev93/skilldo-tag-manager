@@ -1,20 +1,33 @@
 <?php
+
+use SkillDo\DB;
+
 Class Tag extends \SkillDo\Model\Model {
 
-    static string $table = 'tags';
+    protected string $table = 'tags';
 
-    static array $column = [
-    ];
-
-    static array $rules = [
-        'created' => true,
-        'updated' => true,
+    protected array $rules = [
         'add' => [
             'require' => [
                 'name' => 'Không thể cập nhật trang khi tiêu đề trống'
             ]
         ]
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleted(function (Tag $tag, $listRemove, $objects) {
+            //delete menu
+            DB::table('tags_relationships')->whereIn('tag_id', $listRemove)->delete();
+
+            foreach ($objects as  $object) {
+                \SkillDo\Cache::delete( 'tags_'.md5($object->id), true );
+                \SkillDo\Cache::delete( 'tags_'.md5($object->slug), true );
+            }
+        });
+    }
 
     static function getsByObjectID($id, $type = 'product') {
 
@@ -46,59 +59,6 @@ Class Tag extends \SkillDo\Model\Model {
         }
 
         return $listID;
-    }
-
-    static function deleteById($id = 0): array|bool
-    {
-        $id = (int)Str::clear($id);
-
-        if($id == 0) return false;
-
-        $model = model(static::$table);
-
-        $tag   = static::get($id);
-
-        if(have_posts($tag)) {
-
-            do_action('delete_tags', $tag );
-
-            if($model->delete(Qr::set($tag))) {
-
-                do_action('delete_tags_success', $id );
-
-                //delete menu
-                $model->table('tags_relationships')::delete(Qr::set('tag_id', $id));
-
-                \SkillDo\Cache::delete( 'tags_'.md5($tag->id), true );
-
-                \SkillDo\Cache::delete( 'tags_'.md5($tag->slug), true );
-
-                return [$id];
-            }
-        }
-
-        return false;
-    }
-
-    static function deleteList($listID = []) {
-
-        if(have_posts($listID)) {
-
-            $model  = model(static::$table);
-
-            if($model->delete(Qr::set()->whereIn('id', $listID))) {
-
-                do_action('delete_tags_list_trash_success', $listID );
-
-                $model->table('tags_relationships')::delete(Qr::set()->whereIn('tag_id', $listID));
-
-                \SkillDo\Cache::delete( 'tags_', true );
-
-                return $listID;
-            }
-        }
-
-        return false;
     }
 
     static function empty($id, $type = 'product') {

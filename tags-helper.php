@@ -14,7 +14,7 @@ Class Tag extends \SkillDo\Model\Model {
         ]
     ];
 
-    protected static function boot()
+    protected static function boot(): void
     {
         parent::boot();
 
@@ -31,10 +31,11 @@ Class Tag extends \SkillDo\Model\Model {
 
     static function getsByObjectID($id, $type = 'product') {
 
-        $temp = model('tags_relationships')::where('object_id', $id)
+        $temp = DB::table('tags_relationships')
+                ->where('object_id', $id)
                 ->where('object_type', $type)
                 ->select('object_id', 'tag_id')
-                ->fetch();
+                ->get();
 
         $listID = [];
 
@@ -45,12 +46,13 @@ Class Tag extends \SkillDo\Model\Model {
         return static::whereIn('id', $listID)->fetch();
     }
 
-    static function getsObjectID($id, $type = 'product') {
-
-        $temp = model('tags_relationships')::where('tag_id', $id)
+    static function getsObjectID($id, $type = 'product'): array
+    {
+        $temp = DB::table('tags_relationships')
+            ->where('tag_id', $id)
             ->where('object_type', $type)
             ->select('object_id', 'tag_id')
-            ->fetch();
+            ->get();
 
         $listID = [];
 
@@ -61,18 +63,20 @@ Class Tag extends \SkillDo\Model\Model {
         return $listID;
     }
 
-    static function empty($id, $type = 'product') {
-
-        return model('tags_relationships')::where('object_id', $id)->where('object_type', $type)->remove();
+    static function empty($id, $type = 'product'): int
+    {
+        return DB::table('tags_relationships')->where('object_id', $id)->where('object_type', $type)->delete();
     }
 
     static function insertRelationship($id, $listID, $type = 'product'): void
     {
-        $model = model('tags_relationships');
-
         if( have_posts($listID) ) {
 
-            $temp = $model::gets(Qr::set('object_id', $id)->where('object_type', $type)->select('tag_id'));
+            $temp = DB::table('tags_relationships')
+                ->where('object_id', $id)
+                ->where('object_type', $type)
+                ->select('tag_id')
+                ->get();
 
             $relationships = [];
 
@@ -90,12 +94,16 @@ Class Tag extends \SkillDo\Model\Model {
                     continue;
                 }
                 $re['tag_id'] = $tagID;
-                $model->add($re);
+                DB::table('tags_relationships')->insertGetId($re);
             }
 
             if( have_posts($relationships) ) {
                 foreach ($relationships as $tag_id) {
-                    $model::delete(Qr::set('object_id', $id)->where('object_type', $type)->where('tag_id', $tag_id));
+                    DB::table('tags_relationships')
+                        ->where('object_id', $id)
+                        ->where('object_type', $type)
+                        ->where('tag_id', $tag_id)
+                        ->delete();
                 }
             }
         }
